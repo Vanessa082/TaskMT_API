@@ -2,6 +2,7 @@ import pool from '../config/dbconfig.js';
 import express from 'express';
 import registrationValidator from '../utils/registrationValidator.js';
 import bcript, { hash } from 'bcrypt';
+import loginValidator from '../utils/loginValidator.js';
 
 
 const router = express.Router();
@@ -36,6 +37,24 @@ router.post('/register', registrationValidator, async function (req, res, next) 
     console.error('Error in try-catch block:', error?.message || error
     );
     return res.status(500).json({ error: 'Internal server error' });
+  }
+})
+
+// Login route
+
+router.post('./login', loginValidator, async function (req, res, next) {
+  try {
+    const {email, password} = req.body;
+    const userCheckQuery = `select * from accounts where email =$1`
+    const existingUser = await pool.query(userCheckQuery, [email]);
+
+    const user = existingUser.rows[0];
+
+    if(!user) return res.status(401).json({error:'Invalid Email or Password'});
+
+    
+  } catch (error) {
+    
   }
 })
 
