@@ -21,4 +21,8 @@ pool.connect()
     process.exit(-1); // Exit process with failure
   });
 
+  export const appConfig = {
+    JWT_SECRET: process.env.SECRET_KEY
+  }
+
 export default pool;
