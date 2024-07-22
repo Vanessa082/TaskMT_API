@@ -1,16 +1,14 @@
 import pool from '../config/dbconfig.js';
 import express from 'express';
-import registrationValidatetor from '../uitils/registrationValidator.js';
+import registrationValidator from '../utils/registrationValidator.js';
 import bcript, { hash } from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import loginValidator from '../uitils/loginValidator.js';
 
 
 const router = express.Router();
 
 // register new user
 
-router.post('/register', registrationValidatetor, async function (req, res, next) {
+router.post('/register', registrationValidator, async function (req, res, next) {
   try {
     const { username, email, password } = req.body;
 
