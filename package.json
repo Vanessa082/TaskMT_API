@@ -1,0 +1,22 @@
+{
+  "name": "taskmt_api",
+  "version": "1.0.0",
+  "description": "task management tool endpoint built with  Node.js, and Express. It allows users to efficiently use the endpoints to register user, login user, organize tasks, set deadlines, and collaborate on projects. Featuring a calendar view, notification system, and more, TaskMate simplifies task management and improves productivity.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vanessa082/TaskMT_API.git"
+  },
+  "author": "Wah Vanessa",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Vanessa082/TaskMT_API/issues"
+  },
+  "homepage": "https://github.com/Vanessa082/TaskMT_API#readme",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
