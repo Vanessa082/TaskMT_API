@@ -4,6 +4,7 @@ import registrationValidator from '../utils/registrationValidator.js';
 import bcrypt from 'bcrypt';
 import loginValidator from '../utils/loginValidator.js';
 import { signToken, verifyToken } from '../utils/jwt.js';
+import crypto from 'crypto'
 
 const router = express.Router();
 
@@ -23,10 +24,11 @@ router.post('/register', registrationValidator, async (req, res, next) => {
     // Hashing password
     const saltRound = 10;
     const hash = await bcrypt.hash(password, saltRound);
+    const uuid = crypto.randomUUID();
 
     // Storing user details
-    const addUserQuery = `INSERT INTO accounts (username, email, password, created_at) VALUES ($1, $2, $3, NOW())`;
-    await pool.query(addUserQuery, [username, email, hash]);
+    const addUserQuery = `INSERT INTO accounts (user_id, username, email, password, created_at) VALUES ($1, $2, $3, $4, NOW())`;
+    await pool.query(addUserQuery, [uuid, username, email, hash]);
 
     return res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
