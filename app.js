@@ -1,4 +1,4 @@
-import createError from 'http-errors';
+
 import express from 'express';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
@@ -10,9 +10,11 @@ import usersRouter from './routes/users.js';
 dotenv.config();
 const app = express();
 
-const PORT = 3000;
+const PORT = process.env.PORT ||  3000;
 
-app.use(cors())
+app.use(cors({
+  origin: '*', 
+}))
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());

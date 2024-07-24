@@ -59,17 +59,22 @@ router.post('/login', loginValidator, async (req, res, next) => {
       email: user.email
     }, { expiresIn: '2d' });
 
-    return res.status(200).json({ message: 'Login successful', token });
+    delete user.password;
+
+    return res.status(200).json({ message: 'Login successful', token, user });
   } catch (error) {
     console.error('Error in try-catch block:', error?.message || error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Protected route
-router.get('/protected', authMiddleware, (req, res, next) => {
-  const user = req.user;
-  return res.status(200).json({ message: `Welcome back ${user.email}` });
+// currentuser route
+router.get('/current-user', authMiddleware, (req, res, next) => {
+  if (req.user) {
+    return res.status(200).json(req.user);
+  }
+
+  return res.status(401).json({ message: "Unauthorized: Invalid or expired token" });
 });
 
 // Authentication middleware
@@ -96,11 +101,16 @@ export async function authMiddleware(req, res, next) {
       return res.status(401).json({ error: "Unauthorized: Invalid token" });
     }
 
-    req.user = jwtPayload;
+    const user = existingUser?.rows[0];
+
+    delete user.password;
+
+    req.user = user;
+
     next();
   } catch (error) {
-    console.error('Error in authMiddleware:', error?.message || error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error('Error in authMiddleware:', error);
+    return res.status(401).json({ error });
   }
 }
 
