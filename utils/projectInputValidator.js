@@ -3,13 +3,13 @@ import Joi from "joi";
 const projectSchema = {
   name: Joi.string().min(3).max(255).required(),
   description: Joi.string().required(),
-  deadline: Joi.date().required(),
-  created_at: Joi.date().default(() => new Date(), 'time of creation'),
-  updated_at: Joi.date().default(() => new Date(), 'time of update')
+  deadline: Joi.date().required()
 }
-export default function projectValidator () {
-  const { error } = projectSchema.validate(req.body);
-  if(error) return res.status(400).send(error.details[0].message)
+export default function projectValidator(req, res, next) {
+  const { error, value } = projectSchema.validate(req.body);
+  if (error) return res.status(400).send(error.details[0].message)
+    req.validatedProject = value
+  next()
 }
 // CREATE TABLE projects (
 //   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
