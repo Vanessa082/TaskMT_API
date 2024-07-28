@@ -54,3 +54,28 @@ router.post('/project', authMiddleware, projectValidator, async function (req, r
   }
 })
 
+// uodating project by id
+
+router.put('/project/:id', authMiddleware, projectValidator, async (req, res, next) => {
+  const projectId = req.params.id;
+  const { name, description, deadline } = req.validatedProject; // Get the validated project data
+
+  try {
+    const updateProjectQuery = `
+      UPDATE projects 
+      SET name = $1, description = $2, deadline = $3, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $4
+      RETURNING *;
+    `;
+    const result = await pool.query(updateProjectQuery, [name, description, deadline, projectId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    return res.status(200).json(result.rows[0]); // Return the updated project
+  } catch (error) {
+    console.error('Error updating project:', error.message || error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
