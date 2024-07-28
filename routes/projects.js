@@ -6,6 +6,7 @@ import crypto from 'crypto'
 const router = express.Router();
 
 // Get projects 
+
 router.get('/projects', authMiddleware, async (req, res, next) => {
   try {
     const result = await pool.query("SELECT * FROM projects;");
@@ -19,7 +20,22 @@ router.get('/projects', authMiddleware, async (req, res, next) => {
   }
 });
 
-// get project
+// get project by id
+
+router.get('/project:id', authMiddleware, async (req, res, next) => {
+  const projectId = req.params.id;
+  try {
+    const gettingProject = await pool("SELECT * FROM projects WHERE id = $1", [projectId]);
+    if (gettingProject.rows.length === 0) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+    res.json(gettingProject.rows[0]);
+  } catch (err) {
+    console.error('Error fetching project by ID:', err.message || err);
+    next(err);
+  }
+});
+
 // create project
 
 router.post('/project', authMiddleware, projectValidator, async function (req, res, next) {
