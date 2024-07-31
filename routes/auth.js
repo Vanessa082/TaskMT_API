@@ -1,4 +1,4 @@
-import pool from '../config/config.js';
+import pool, { appConfig } from '../config/config.js';
 import express from 'express';
 import registrationValidator from '../utils/registrationValidator.js';
 import bcrypt from 'bcrypt';
@@ -57,7 +57,7 @@ router.post('/login', loginValidator, async (req, res, next) => {
     const token = signToken({
       id: user.user_id,
       email: user.email
-    }, { expiresIn: '2d' });
+    }, { expiresIn: appConfig.JWT_EXPIRATION_TIME });
 
     delete user.password;
 

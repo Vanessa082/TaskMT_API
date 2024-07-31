@@ -22,7 +22,8 @@ pool.connect()
   });
 
   export const appConfig = {
-    JWT_SECRET: process.env.SECRET_KEY
+    JWT_SECRET: process.env.SECRET_KEY,
+    JWT_EXPIRATION_TIME: process.env.JWT_EXPIRATION_TIME
   }
 
 export default pool;
