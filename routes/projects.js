@@ -24,9 +24,9 @@ router.get('/', authMiddleware, async (req, res, next) => {
 // get project by id
 
 router.get('/:id', authMiddleware, async (req, res, next) => {
-  const projectId = req.params.id;
+  const projectId = req.params.project_id;
   try {
-    const gettingProject = await pool("SELECT * FROM projects WHERE id = $1", [projectId]);
+    const gettingProject = await pool("SELECT * FROM projects WHERE project_id = $1", [projectId]);
     if (gettingProject.rows.length === 0) {
       return res.status(404).json({ message: "Project not found" });
     }
@@ -46,7 +46,7 @@ router.post('/', authMiddleware, projectValidator, async function (req, res, nex
     const uuid = crypto.randomUUID();
 
     const addProjectQuery = `
-      INSERT INTO projects (id, name, description, user_id, deadline, created_at, updated_at)
+      INSERT INTO projects (project_id, name, description, user_id, deadline, created_at, updated_at)
       VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       RETURNING *`; // Add RETURNING * to get the inserted project data
 
@@ -69,7 +69,7 @@ router.put('/:id', authMiddleware, projectValidator, async (req, res, next) => {
     const updateProjectQuery = `
       UPDATE projects 
       SET name = $1, description = $2, deadline = $3, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $4
+      WHERE project_id = $4
       RETURNING *;
     `;
     const result = await pool.query(updateProjectQuery, [name, description, deadline, projectId]);
@@ -88,12 +88,12 @@ router.put('/:id', authMiddleware, projectValidator, async (req, res, next) => {
 // delete project 
 
 router.delete("/:id", authMiddleware, async (req, res, next) => {
-  const projectId = req.params.id;
+  const projectId = req.params.project_id;
 
   try {
     const deleteProjectQuery = `
       DELETE FROM projects
-      WHERE id = $1
+      WHERE project_id = $1
       RETURNING *;
     `;
 

@@ -43,12 +43,15 @@ router.post('/', authMiddleware, taskValidator, async function (req, res, next) 
   try {
     const [title, description, deadline, reminder, status] = req.validatedtask;
     const user_id = req.user_id;
-    const tast_id = req.tast_id;
-    const project_id = req.project_id
+    const project_id = req.body.project_id
     const uuid = crypto.randomUUID();
 
-    const addtaskQuery = `INSERT INTO tasks (tast_id, title, description, priority, deadline, reminder, status, user_id, project_id, created_at, updated_at) VALUE ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`;
-    const insertedtask = await pool.query(addtaskQuery, [uuid, name, description, user_id, deadline])
+    const addTaskQuery = `
+    INSERT INTO tasks (tast_id, title, description, priority, deadline, reminder, status, user_id, project_id, created_at, updated_at) 
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) 
+    RETURNING *;
+  `;
+  const insertedtask = await pool.query(addTaskQuery, [uuid, title, description, priority, deadline, reminder, status, user_id, project_id]);
 
     return res.status(201).json(insertedtask?.rows[0]);
   } catch (error) {
