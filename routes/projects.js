@@ -44,8 +44,8 @@ router.post('/', authMiddleware, projectValidator, async function (req, res, nex
     const status = 'active';  // Set default status to 'active'
 
     const addProjectQuery = `
-      INSERT INTO projects (project_id, name, description, user_id, deadline, created_at, updated_at, status)
-      VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $6)
+      INSERT INTO projects (project_id, name, description, user_id, deadline, created_at, updated_at, status, reminder)
+      VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $6, CURRENT_TIMESTAMP)
       RETURNING *`; // Add RETURNING * to get the inserted project data
 
     const insertedProject = await pool.query(addProjectQuery, [uuid, name, description, user_id, deadline, status]);
@@ -65,7 +65,7 @@ router.put('/:id', authMiddleware, projectValidator, async (req, res, next) => {
   try {
     const updateProjectQuery = `
       UPDATE projects 
-      SET name = $1, description = $2, deadline = $3, status = $4, updated_at = CURRENT_TIMESTAMP
+      SET name = $1, description = $2, deadline = $3, status = $4, reminder = $5, updated_at = CURRENT_TIMESTAMP
       WHERE project_id = $5
       RETURNING *;
     `;

@@ -56,15 +56,15 @@ router.get('/:id', authMiddleware, async (req, res, next) => {
 /// Create a task with optional project_id
 router.post('/', authMiddleware, taskValidator, async (req, res, next) => {
   try {
-    const { title, description, priority, deadline, reminder, status, project_id } = req.body;
+    const { title, description, priority, deadline, reminder, status, project_id, time_estimate, is_recurring, recurrence_pattern } = req.body;
     const user_id = req.user_id; // Get user ID from request context
     const uuid = crypto.randomUUID();
 
     const addTaskQuery = `
-      INSERT INTO tasks (task_id, title, description, priority, deadline, reminder, status, user_id, project_id, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      RETURNING *;
-    `;
+    INSERT INTO tasks (task_id, title, description, priority, deadline, reminder, status, user_id, project_id, created_at, updated_at, time_estimate, is_recurring, recurrence_pattern)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $10, $11, $12)
+    RETURNING *;
+  `;
 
     const insertedTask = await pool.query(addTaskQuery, [
       uuid,
@@ -75,7 +75,10 @@ router.post('/', authMiddleware, taskValidator, async (req, res, next) => {
       reminder,
       status,
       user_id,
-      project_id || null // Use null if project_id is not provided
+      project_id || null, // Use null if project_id is not provided
+      time_estimate || null, // Use null if time_estimate is not provided
+      is_recurring || false, // Default to false if is_recurring is not provided
+      recurrence_pattern || null // Use null if recurrence_pattern is not provided
     ]);
 
     res.status(201).json(insertedTask.rows[0]);
@@ -88,14 +91,14 @@ router.post('/', authMiddleware, taskValidator, async (req, res, next) => {
 // Update a task
 
 router.put('/:id', authMiddleware, taskValidator, async (req, res, next) => {
-  const taskId = req.params.id;
-  const { title, description, deadline, reminder, priority, status, project_id } = req.body;
+  const taskId = req.params.task_id;
+  const { title, description, deadline, reminder, priority, status, project_id, time_estimate, is_recurring, recurrence_pattern } = req.body;
 
   try {
     const updateTaskQuery = `
       UPDATE tasks
-      SET title = $1, description = $2, deadline = $3, reminder = $4, priority = $5, status = $6, project_id = $7, updated_at = CURRENT_TIMESTAMP
-      WHERE task_id = $8
+      SET title = $1, description = $2, deadline = $3, reminder = $4, priority = $5, status = $6, project_id = $7, updated_at = CURRENT_TIMESTAMP, time_estimate = $8, is_recurring = $9, recurrence_pattern = $10
+      WHERE task_id = $11
       RETURNING *;
     `;
     const updatedTask = await pool.query(updateTaskQuery, [
@@ -106,8 +109,15 @@ router.put('/:id', authMiddleware, taskValidator, async (req, res, next) => {
       priority,
       status,
       project_id || null, // Use null if project_id is not provided
+      time_estimate || null, // Use null if time_estimate is not provided
+      is_recurring || false, // Default to false if is_recurring is not provided
+      recurrence_pattern || null, // Use null if recurrence_pattern is not provided
       taskId
     ]);
+
+    if (updatedTask.rows.length === 0) {
+      return res.status(404).json({ message: "Task not found" });
+    }
 
     if (updatedTask.rows.length === 0) {
       return res.status(404).json({ message: "Task not found" });
@@ -133,7 +143,7 @@ router.delete("/:id", authMiddleware, async (req, res, next) => {
       WHERE task_id = $1
       RETURNING *;
     `;
-    
+
     // Execute the query
     const result = await pool.query(deleteTaskQuery, [taskId]);
 
