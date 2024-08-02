@@ -53,16 +53,44 @@ router.get('/:id', authMiddleware, async (req, res, next) => {
   }
 });
 
-/// Create a task with optional project_id
+// Create a task with optional project_id and dependency_task_id
+
 router.post('/', authMiddleware, taskValidator, async (req, res, next) => {
   try {
-    const { title, description, priority, deadline, reminder, status, project_id, time_estimate, is_recurring, recurrence_pattern } = req.body;
+    const { title, description, priority, deadline, reminder, status, project_id, time_estimate, is_recurring, recurrence_pattern, dependency_task_id } = req.body;
     const user_id = req.user_id; // Get user ID from request context
     const uuid = crypto.randomUUID();
 
+    // Check task limit
+    const limitQuery = 'SELECT task_limit FROM user_settings WHERE user_id = $1';
+    const limitResult = await pool.query(limitQuery, [user_id]);
+    const taskLimit = limitResult.rows[0]?.task_limit;
+
+    if (taskLimit) {
+      const countQuery = 'SELECT COUNT(*) FROM tasks WHERE user_id = $1';
+      const countResult = await pool.query(countQuery, [user_id]);
+      const taskCount = parseInt(countResult.rows[0].count, 10);
+
+      if (taskCount >= taskLimit) {
+        // Suggest tasks of lesser priority for deletion
+        const suggestQuery = `
+          SELECT * FROM tasks
+          WHERE user_id = $1 AND priority > $2
+          ORDER BY priority ASC, deadline DESC
+          LIMIT 5;
+        `;
+        const suggestions = await pool.query(suggestQuery, [user_id, priority]);
+
+        return res.status(403).json({
+          message: "Task limit reached. Consider deleting lower priority tasks.",
+          suggestions: suggestions.rows
+        });
+      }
+    }
+
     const addTaskQuery = `
-    INSERT INTO tasks (task_id, title, description, priority, deadline, reminder, status, user_id, project_id, created_at, updated_at, time_estimate, is_recurring, recurrence_pattern)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $10, $11, $12)
+    INSERT INTO tasks (task_id, title, description, priority, deadline, reminder, status, user_id, project_id, created_at, updated_at, time_estimate, is_recurring, recurrence_pattern, dependency_task_id)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $10, $11, $12, $13)
     RETURNING *;
   `;
 
@@ -78,7 +106,8 @@ router.post('/', authMiddleware, taskValidator, async (req, res, next) => {
       project_id || null, // Use null if project_id is not provided
       time_estimate || null, // Use null if time_estimate is not provided
       is_recurring || false, // Default to false if is_recurring is not provided
-      recurrence_pattern || null // Use null if recurrence_pattern is not provided
+      recurrence_pattern || null, // Use null if recurrence_pattern is not provided
+      dependency_task_id || null // Use null if dependency_task_id is not provided
     ]);
 
     res.status(201).json(insertedTask.rows[0]);
