@@ -3,7 +3,7 @@ import express from 'express';
 import registrationValidator from '../utils/registrationValidator.js';
 import bcrypt from 'bcrypt';
 import loginValidator from '../utils/loginValidator.js';
-import { signToken, verifyToken } from '../utils/jwt.js';
+import { signToken, verifyToken, signRefreshToken, verifyRefreshToken} from '../utils/jwt.js';
 import crypto from 'crypto'
 
 const router = express.Router();
@@ -36,6 +36,8 @@ router.post('/register', registrationValidator, async (req, res, next) => {
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+//refresh token endpoint
 
 // Login route
 router.post('/login', loginValidator, async (req, res, next) => {
