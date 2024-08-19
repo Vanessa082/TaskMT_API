@@ -1,24 +1,52 @@
-import { Notification } from 'node-notifier'; // Assuming you're using node-notifier for desktop notifications
+import nodemailer from 'nodemailer';  
 
-// Function to send a notification
-const sendNotification = (title, message) => {
-  new Notification({
-    title: title,
-    message: message,
-    sound: true, 
-    wait: true
-  }).show();
-};
+const transporter = nodemailer.createTransport({  
+  service: 'Gmail', 
+  auth: {  
+    user: process.env.EMAIL_USER,   
+    pass: process.env.EMAIL_PASS, 
+  },  
+});  
 
-// Export the notification functions
-export const notifyTaskCreated = (task) => {
-  sendNotification('Task Created', `A new task "${task.title}" has been created.`);
-};
+const sendMail = (to, subject, text) => {  
+  const mailOptions = {  
+    from: process.env.EMAIL_USER,  
+    to,  
+    subject,  
+    text,  
+  };  
 
-export const notifyTaskUpdated = (task) => {
-  sendNotification('Task Updated', `The task "${task.title}" has been updated.`);
-};
+  transporter.sendMail(mailOptions, (error, info) => {  
+    if (error) {  
+      return console.error('Error sending notification email:', error);  
+    }  
+    console.log('Notification email sent:', info.response);  
+  });  
+};  
 
-export const notifyTaskDeleted = (task) => {
-  sendNotification('Task Deleted', `The task "${task.title}" has been deleted.`);
+const notifyTaskCreated = (task) => {  
+  const { title, user_id } = task;  
+  sendMail(user_id, `Task Created: ${title}`, `A new task "${title}" has been created.`);  
+};  
+
+const notifyTaskUpdated = (task) => {  
+  const { title, user_id } = task;  
+  sendMail(user_id, `Task Updated: ${title}`, `The task "${title}" has been updated.`);  
+};  
+
+const notifyTaskDeleted = (task) => {  
+  const { title, user_id } = task;  
+  sendMail(user_id, `Task Deleted: ${title}`, `The task "${title}" has been deleted.`);  
+};  
+
+const notifyDueDateApproaching = (task) => {  
+  const { title, user_id, deadline } = task;  
+  sendMail(user_id, `Task Due Soon: ${title}`, `Reminder: The task "${title}" is due on ${deadline}.`);  
+};  
+
+export {  
+  notifyTaskCreated,  
+  notifyTaskUpdated,  
+  notifyTaskDeleted,  
+  notifyDueDateApproaching,  
 };

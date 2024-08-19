@@ -150,7 +150,7 @@ router.put('/:id', authMiddleware, taskValidator, async (req, res, next) => {
       return res.status(404).json({ message: "Task not found" });  
     }  
   
-    notifyTaskUpdated(result.rows[0])
+    notifyTaskUpdated(updatedTask);  
     res.status(200).json(result.rows[0]);  
   } catch (error) {  
     console.error('Error updating task:', error.message || error);  
@@ -168,7 +168,7 @@ router.delete('/:id', authMiddleware, async (req, res, next) => {
     if (result.rows.length === 0) {  
       return res.status(404).json({ message: "Task not found" });  
     }  
-    notifyTaskDeleted()
+    notifyTaskDeleted(deletedTask[id]); 
     res.status(204).send(); // No Content  
   } catch (error) {  
     console.error('Error deleting task:', error.message || error);  
