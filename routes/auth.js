@@ -1,9 +1,10 @@
-import pool from '../config/config.js';
+import pool, { appConfig } from '../config/config.js';
 import express from 'express';
 import registrationValidator from '../utils/registrationValidator.js';
 import bcrypt from 'bcrypt';
 import loginValidator from '../utils/loginValidator.js';
-import { signToken, verifyToken } from '../utils/jwt.js';
+import { signToken, verifyToken, signRefreshToken, verifyRefreshToken} from '../utils/jwt.js';
+import crypto from 'crypto'
 
 const router = express.Router();
 
@@ -23,10 +24,11 @@ router.post('/register', registrationValidator, async (req, res, next) => {
     // Hashing password
     const saltRound = 10;
     const hash = await bcrypt.hash(password, saltRound);
+    const uuid = crypto.randomUUID();
 
     // Storing user details
-    const addUserQuery = `INSERT INTO accounts (username, email, password, created_at) VALUES ($1, $2, $3, NOW())`;
-    await pool.query(addUserQuery, [username, email, hash]);
+    const addUserQuery = `INSERT INTO accounts (user_id, username, email, password, created_at) VALUES ($1, $2, $3, $4, NOW())`;
+    await pool.query(addUserQuery, [uuid, username, email, hash]);
 
     return res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
@@ -34,6 +36,8 @@ router.post('/register', registrationValidator, async (req, res, next) => {
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+//refresh token endpoint
 
 // Login route
 router.post('/login', loginValidator, async (req, res, next) => {
@@ -55,19 +59,24 @@ router.post('/login', loginValidator, async (req, res, next) => {
     const token = signToken({
       id: user.user_id,
       email: user.email
-    }, { expiresIn: '2d' });
+    }, { expiresIn: appConfig.JWT_EXPIRATION_TIME });
 
-    return res.status(200).json({ message: 'Login successful', token });
+    delete user.password;
+
+    return res.status(200).json({ message: 'Login successful', token, user });
   } catch (error) {
     console.error('Error in try-catch block:', error?.message || error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Protected route
-router.get('/protected', authMiddleware, (req, res, next) => {
-  const user = req.user;
-  return res.status(200).json({ message: `Welcome back ${user.email}` });
+// currentuser route
+router.get('/current-user', authMiddleware, (req, res, next) => {
+  if (req.user) {
+    return res.status(200).json(req.user);
+  }
+
+  return res.status(401).json({ message: "Unauthorized: Invalid or expired token" });
 });
 
 // Authentication middleware
@@ -94,11 +103,16 @@ export async function authMiddleware(req, res, next) {
       return res.status(401).json({ error: "Unauthorized: Invalid token" });
     }
 
-    req.user = jwtPayload;
+    const user = existingUser?.rows[0];
+
+    delete user.password;
+
+    req.user = user;
+
     next();
   } catch (error) {
-    console.error('Error in authMiddleware:', error?.message || error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error('Error in authMiddleware:', error);
+    return res.status(401).json({ error });
   }
 }
 

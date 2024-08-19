@@ -1,22 +1,29 @@
-import createError from 'http-errors';
 import express from 'express';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
+import cors  from "cors"
 
 import authRouter from './routes/auth.js';
 import usersRouter from './routes/users.js';
+import projectRouter from './routes/projects.js';
+import notificationRoute from './routes/notification.js'
 
 dotenv.config();
 const app = express();
 
-const PORT = 3000;
+const PORT = process.env.PORT ||  3000;
 
+app.use(cors({
+  origin: '*', 
+}))
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.use('/auth', authRouter);
 app.use('/users', usersRouter);
+app.use('/projects', projectRouter);
+app.use('/notification', notificationRoute)
 
 // catch 404 and forward to error handler
 // app.use(function (req, res, next) {
