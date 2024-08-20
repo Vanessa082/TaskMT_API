@@ -3,7 +3,7 @@ import express from 'express';
 import registrationValidator from '../utils/registrationValidator.js';
 import bcrypt from 'bcrypt';
 import loginValidator from '../utils/loginValidator.js';
-import { signToken, verifyToken, signRefreshToken, verifyRefreshToken} from '../utils/jwt.js';
+import { signToken, verifyToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
 import crypto from 'crypto'
 
 const router = express.Router();
@@ -88,7 +88,14 @@ export async function authMiddleware(req, res, next) {
   }
 
   try {
-    const jwtPayload = verifyToken(token);
+    const jwtPayload = (() => {
+      try {
+        const t = verifyToken(token);
+        return t;
+      } catch (error) {
+        return null;
+      }
+    })();
 
     // Check if the token is valid and not expired
     if (!jwtPayload) {

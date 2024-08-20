@@ -3,8 +3,8 @@ import Joi from "joi";
 const projectSchema = Joi.object({
   name: Joi.string().min(3).max(255).required(),
   description: Joi.string().required(),
-  deadline: Joi.date().required(),
-  status: Joi.string().default("active"),
+  deadline: Joi.date().optional(),
+  status: Joi.string()
 });
 
 export default function projectValidator(req, res, next) {

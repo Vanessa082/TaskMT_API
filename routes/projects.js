@@ -65,7 +65,7 @@ router.put('/:id', authMiddleware, projectValidator, async (req, res, next) => {
   try {
     const updateProjectQuery = `
       UPDATE projects 
-      SET name = $1, description = $2, deadline = $3, status = $4, reminder = $5, updated_at = CURRENT_TIMESTAMP
+      SET name = $1, description = $2, deadline = $3, status = $4, updated_at = CURRENT_TIMESTAMP
       WHERE project_id = $5
       RETURNING *;
     `;
