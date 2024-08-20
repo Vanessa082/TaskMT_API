@@ -1,5 +1,5 @@
 import pool from "../config/config.js";
-import taskValidator from "../utils/taskInputValidator.js";
+import taskValidator from "../utils/taskValidator.js";
 import { authMiddleware } from "./auth.js";
 import crypto from 'crypto';
 import express from 'express';
@@ -57,57 +57,28 @@ router.get('/:id', authMiddleware, async (req, res, next) => {
 
 router.post('/', authMiddleware, taskValidator, async (req, res, next) => {
   try {
-    const { title, description, priority, deadline, reminder, status, project_id, time_estimate, is_recurring, recurrence_pattern, dependency_task_id } = req.body;
+    const { name, description, priority, deadline,  status, project_id, time_estimate, is_recurring, recurrence_pattern, } = req.body;
     const user_id = req.user_id; // Get user ID from request context
     const uuid = crypto.randomUUID();
 
-    // Check task limit
-    const limitQuery = 'SELECT task_limit FROM user_settings WHERE user_id = $1';
-    const limitResult = await pool.query(limitQuery, [user_id]);
-    const taskLimit = limitResult.rows[0]?.task_limit;
-
-    if (taskLimit) {
-      const countQuery = 'SELECT COUNT(*) FROM tasks WHERE user_id = $1';
-      const countResult = await pool.query(countQuery, [user_id]);
-      const taskCount = parseInt(countResult.rows[0].count, 10);
-
-      if (taskCount >= taskLimit) {
-        // Suggest tasks of lesser priority for deletion
-        const suggestQuery = `
-          SELECT * FROM tasks
-          WHERE user_id = $1 AND priority > $2
-          ORDER BY priority ASC, deadline DESC
-          LIMIT 5;
-        `;
-        const suggestions = await pool.query(suggestQuery, [user_id, priority]);
-
-        return res.status(403).json({
-          message: "Task limit reached. Consider deleting lower priority tasks.",
-          suggestions: suggestions.rows
-        });
-      }
-    }
-
     const addTaskQuery = `
-    INSERT INTO tasks (task_id, title, description, priority, deadline, reminder, status, user_id, project_id, created_at, updated_at, time_estimate, is_recurring, recurrence_pattern, dependency_task_id)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $10, $11, $12, $13)
+    INSERT INTO tasks (task_id, name, description, priority, deadline, status, user_id, project_id, created_at, updated_at, time_estimate, is_recurring, recurrence_pattern)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $9, $10, $11)
     RETURNING *;
   `;
 
     const insertedTask = await pool.query(addTaskQuery, [
       uuid,
-      title,
+      name,
       description,
       priority,
       deadline,
-      reminder,
       status,
       user_id,
       project_id || null, // Use null if project_id is not provided
       time_estimate || null, // Use null if time_estimate is not provided
       is_recurring || false, // Default to false if is_recurring is not provided
-      recurrence_pattern || null, // Use null if recurrence_pattern is not provided
-      dependency_task_id || null // Use null if dependency_task_id is not provided
+      recurrence_pattern || null, // Use null if recurrence_pattern is not provide
     ]);
 
     res.status(201).json(insertedTask.rows[0]);
@@ -121,17 +92,17 @@ router.post('/', authMiddleware, taskValidator, async (req, res, next) => {
 
 router.put('/:id', authMiddleware, taskValidator, async (req, res, next) => {
   const taskId = req.params.task_id;
-  const { title, description, deadline, reminder, priority, status, project_id, time_estimate, is_recurring, recurrence_pattern } = req.body;
+  const { name, description, deadline, reminder, priority, status, project_id, time_estimate, is_recurring, recurrence_pattern } = req.body;
 
   try {
     const updateTaskQuery = `
       UPDATE tasks
-      SET title = $1, description = $2, deadline = $3, reminder = $4, priority = $5, status = $6, project_id = $7, updated_at = CURRENT_TIMESTAMP, time_estimate = $8, is_recurring = $9, recurrence_pattern = $10
+      SET name = $1, description = $2, deadline = $3, reminder = $4, priority = $5, status = $6, project_id = $7, updated_at = CURRENT_TIMESTAMP, time_estimate = $8, is_recurring = $9, recurrence_pattern = $10
       WHERE task_id = $11
       RETURNING *;
     `;
     const updatedTask = await pool.query(updateTaskQuery, [
-      title,
+      name,
       description,
       deadline,
       reminder,
