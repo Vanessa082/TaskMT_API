@@ -16,7 +16,8 @@ const sendMail = (to, subject, text) => {
     text,  
   };  
 
-  transporter.sendMail(mailOptions, (error, info) => {  
+  transporter.send
+  Mail(mailOptions, (error, info) => {  
     if (error) {  
       return console.error('Error sending notification email:', error);  
     }  
@@ -44,9 +45,9 @@ const notifyDueDateApproaching = (task) => {
   sendMail(user_id, `Task Due Soon: ${title}`, `Reminder: The task "${title}" is due on ${deadline}.`);  
 };  
 
-export {  
+export default {  
   notifyTaskCreated,  
   notifyTaskUpdated,  
   notifyTaskDeleted,  
-  notifyDueDateApproaching,  
+  notifyDueDateApproaching
 };

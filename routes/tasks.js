@@ -1,13 +1,11 @@
 import pool from "../config/config.js";  
-import taskValidator from "../utils/taskInputValidator.js";  
+import taskValidator from '../utils/taskValidator.js'
 import { authMiddleware } from "./auth.js";  
 import crypto from 'crypto';  
 import express from 'express';  
-import { notifyTaskCreated, notifyTaskUpdated, notifyTaskDeleted } from '../utils/notifications.js'; // Adjust the path according to your project structure.  
-
+import {  notifyTaskCreated,  notifyTaskUpdated, notifyTaskDeleted,  notifyDueDateApproaching } from '../utils/notification.js'
 const router = express.Router();  
-
-// Get tasks by project_id  
+                                                                       
 router.get('/', authMiddleware, async (req, res, next) => {  
   const { project_id } = req.query;  
 
@@ -16,6 +14,7 @@ router.get('/', authMiddleware, async (req, res, next) => {
     if (result.rows.length < 1) {  
       return res.status(200).json([]);  
     }  
+    notifyDueDateApproaching(result.rows)
     res.status(200).json(result.rows);  
   } catch (err) {  
     console.error('Error fetching tasks:', err.message || err);  
@@ -29,7 +28,8 @@ router.get('/', authMiddleware, async (req, res, next) => {
     const result = await pool.query("SELECT * FROM tasks;");  
     if (result.rows.length < 1) {  
       return res.status(404).json({ message: "No task created yet" });  
-    }  
+    } 
+
     res.json(result.rows);  
   } catch (err) {  
     console.error('Error fetching tasks:', err.message || err);  
@@ -176,4 +176,4 @@ router.delete('/:id', authMiddleware, async (req, res, next) => {
   }  
 });  
 
-module.exports = router;
+export default tasks
