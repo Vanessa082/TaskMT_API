@@ -1,53 +1,30 @@
-import nodemailer from 'nodemailer';  
+import express from 'express';  
+const router = express.Router();  
+const pool = require('../db');   
+import { io } from '../server'; 
 
-const transporter = nodemailer.createTransport({  
-  service: 'Gmail', 
-  auth: {  
-    user: process.env.EMAIL_USER,   
-    pass: process.env.EMAIL_PASS, 
-  },  
+router.get('/notifications/:userId', async (req, res) => {  
+  try {  
+    const userId = req.params.userId;  
+    const notifications = await pool.query('SELECT * FROM notifications WHERE user_id = $1', [userId]);  
+    res.json(notifications.rows);  
+  } catch (error) {  
+    console.error(error);  
+    res.status(500).json({ message: 'Internal server error' });  
+  }  
 });  
 
-const sendMail = (to, subject, text) => {  
-  const mailOptions = {  
-    from: process.env.EMAIL_USER,  
-    to,  
-    subject,  
-    text,  
-  };  
+router.post('/notifications', async (req, res) => {  
+  try {  
+    const { message, userId } = req.body;  
+    await pool.query('INSERT INTO notifications (message, user_id) VALUES ($1, $2)', [message, userId]);  
+    
+    io.emit(`notification_${userId}`, { message });  
+    res.status(201).json({ message: 'Notification created successfully' });  
+  } catch (error) {  
+    console.error(error);  
+    res.status(500).json({ message: 'Internal server error' });  
+  }  
+});  
 
-  transporter.send
-  Mail(mailOptions, (error, info) => {  
-    if (error) {  
-      return console.error('Error sending notification email:', error);  
-    }  
-    console.log('Notification email sent:', info.response);  
-  });  
-};  
-
-const notifyTaskCreated = (task) => {  
-  const { title, user_id } = task;  
-  sendMail(user_id, `Task Created: ${title}`, `A new task "${title}" has been created.`);  
-};  
-
-const notifyTaskUpdated = (task) => {  
-  const { title, user_id } = task;  
-  sendMail(user_id, `Task Updated: ${title}`, `The task "${title}" has been updated.`);  
-};  
-
-const notifyTaskDeleted = (task) => {  
-  const { title, user_id } = task;  
-  sendMail(user_id, `Task Deleted: ${title}`, `The task "${title}" has been deleted.`);  
-};  
-
-const notifyDueDateApproaching = (task) => {  
-  const { title, user_id, deadline } = task;  
-  sendMail(user_id, `Task Due Soon: ${title}`, `Reminder: The task "${title}" is due on ${deadline}.`);  
-};  
-
-export default {  
-  notifyTaskCreated,  
-  notifyTaskUpdated,  
-  notifyTaskDeleted,  
-  notifyDueDateApproaching
-};
+export default router; 
