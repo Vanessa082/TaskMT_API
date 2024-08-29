@@ -9,7 +9,9 @@ const router = express.Router();
 // Get all projects
 router.get('/', authMiddleware, async (req, res, next) => {
   try {
-    const result = await pool.query("SELECT * FROM projects;");
+    const user_id = req.user.user_id;  // Corrected to req.user.id to get the authenticated user ID
+
+    const result = await pool.query("SELECT * FROM projects WHERE user_id = $1;", [user_id]);
     if (result.rows.length < 1) {
       return res.status(200).json([]);
     }
@@ -24,9 +26,9 @@ router.get('/', authMiddleware, async (req, res, next) => {
 router.get('/:id', authMiddleware, async (req, res, next) => {
   const projectId = req.params.id;
   try {
-    const gettingProject = await pool.query("SELECT * FROM projects WHERE project_id = $1", [projectId]);
+    const gettingProject = await pool.query("SELECT * FROM projects WHERE id = $1", [projectId]);
     if (gettingProject.rows.length === 0) {
-      return res.status(404).json({ message: "Project not found" });
+      return res.status(204).json({ message: "Project not found" });
     }
     res.json(gettingProject.rows[0]);
   } catch (err) {
@@ -39,12 +41,12 @@ router.get('/:id', authMiddleware, async (req, res, next) => {
 router.post('/', authMiddleware, projectValidator, async function (req, res, next) {
   try {
     const { name, description, deadline } = req.validatedProject;
-    const user_id = req.user.id;  // Corrected to req.user.id to get the authenticated user ID
+    const user_id = req.user.user_id;  // Corrected to req.user.id to get the authenticated user ID
     const uuid = crypto.randomUUID();
     const status = 'active';  // Set default status to 'active'
 
     const addProjectQuery = `
-      INSERT INTO projects (project_id, name, description, user_id, deadline, created_at, updated_at, status, reminder)
+      INSERT INTO projects (id, name, description, user_id, deadline, created_at, updated_at, status, reminder)
       VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $6, CURRENT_TIMESTAMP)
       RETURNING *`; // Add RETURNING * to get the inserted project data
 
@@ -66,13 +68,13 @@ router.put('/:id', authMiddleware, projectValidator, async (req, res, next) => {
     const updateProjectQuery = `
       UPDATE projects 
       SET name = $1, description = $2, deadline = $3, status = $4, updated_at = CURRENT_TIMESTAMP
-      WHERE project_id = $5
+      WHERE id = $5
       RETURNING *;
     `;
     const result = await pool.query(updateProjectQuery, [name, description, deadline, status, projectId]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Project not found" });
+      return res.status(204).json({ message: "Project not found" });
     }
 
     return res.status(200).json(result.rows[0]); // Return the updated project
@@ -87,13 +89,22 @@ router.delete("/:id", authMiddleware, async (req, res, next) => {
   const projectId = req.params.id;
 
   try {
-    const deleteProjectQuery = `
-      DELETE FROM projects
+    const deleteAssociatedTaskstQuery = `
+      DELETE  FROM tasks
       WHERE project_id = $1
       RETURNING *;
     `;
 
-    const result = await pool.query(deleteProjectQuery, [projectId]);
+    const deleteProjectQuery = `
+      DELETE FROM projects
+      WHERE id = $1
+      RETURNING *;
+    `;
+
+    const result = await pool.query(deleteAssociatedTaskstQuery, [projectId])
+      .then(() => pool.query(deleteProjectQuery, [projectId]));
+
+    // const result = await pool.query(deleteProjectQuery, [projectId]);
 
     if (result.rowCount === 0) {
       const notFoundError = new Error("Project does not exist");

@@ -1,7 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
-import cors  from "cors"
+import cors from "cors"
 
 import authRouter from './routes/auth.js';
 import usersRouter from './routes/users.js';
@@ -11,10 +11,10 @@ import taskRouter from './routes/tasks.js'
 dotenv.config();
 const app = express();
 
-const PORT = process.env.PORT ||  3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors({
-  origin: '*', 
+  origin: '*',
 }))
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -24,6 +24,14 @@ app.use('/auth', authRouter);
 app.use('/users', usersRouter);
 app.use('/projects', projectRouter);
 app.use('/tasks', taskRouter)
+
+app.get("/health", (_, res) => {
+  const date = new Date();
+  res.status(200).json({
+    message: "🚀 server up and running 🚀",
+    time: `${date.toDateString()} | ${date.toLocaleTimeString()}`
+  });
+});
 
 // catch 404 and forward to error handler
 // app.use(function (req, res, next) {
@@ -40,7 +48,7 @@ app.use(function (err, req, res, next) {
 
   // render the error page
   res.status(err.status || 500);
-  res.send({ error: err });
+  res.send({ error: err.message });
 });
 
 app.listen(PORT, () => {
