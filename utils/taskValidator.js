@@ -2,11 +2,11 @@ import Joi from "joi";
 
 const taskSchema = Joi.object({
   name: Joi.string().min(1).max(255).required(),
-  description: Joi.string().min(1).max(1000).required(),
-  priority: Joi.string().valid('Low', 'Medium', 'High', 'Urgent').required(),
-  start_time: Joi.date().optional(),
-  deadline: Joi.date().optional(),
-  status: Joi.string().valid('Not Started', 'Pending', 'Completed', 'On hold').required(),
+  description: Joi.string().min(1).max(1000).optional(),
+  priority: Joi.string().valid('Low', 'Medium', 'High', 'Urgent').optional().default('Not Started'),
+  status: Joi.string().valid('Not Started', 'Pending', 'Completed', 'On hold').required().default('Not Started'),
+  start_time: Joi.date().optional().allow(null),
+  deadline: Joi.date().optional().allow(null),
   time_estimate: Joi.string().regex(/^\d+\s+(minutes|hour)$/).optional().allow(null, ''), //for example an hour
   is_recurring: Joi.boolean().default(false).optional(),
   project_id: Joi.string().guid().optional().allow(null, ''),

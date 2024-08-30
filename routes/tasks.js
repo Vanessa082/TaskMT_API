@@ -11,33 +11,28 @@ const router = express.Router();
 // Get tasks  with or without project id
 
 router.get('/', authMiddleware, async (req, res, next) => {
-  const { project_id, priority, status } = req.query;
+  const { project_id, priority, status,  } = req.query;
 
   try {
-    let result;
+    let query = "SELECT * FROM tasks WHERE 1=1";
+    const params = [];
     if (project_id) {
-      result = await pool.query("SELECT * FROM tasks WHERE project_id = $1;", [project_id]);
-    } else {
-      result = await pool.query("SELECT * FROM tasks;")
-      // result = await pool.query("SELECT * FROM tasks WHERE project_id is null;");
+      query += " AND project_id = $1";
+      params.push(project_id);
     }
-
     if (priority) {
-      result = await pool.query("SELECT * FROM tasks WHERE priority = $1;", [priority]);
-    } else {
-      result = await pool.query("SELECT * FROM tasks;")
-      // result = await pool.query("SELECT * FROM tasks WHERE project_id is null;");
+      query += params.length ? " AND priority = $" + (params.length + 1) : " AND priority = $1";
+      params.push(priority);
+    }
+    if (status) {
+      query += params.length ? " AND status = $" + (params.length + 1) : " AND status = $1";
+      params.push(status);
     }
 
-    if (status) {
-      result = await pool.query("SELECT * FROM tasks WHERE status = $1;", [status]);
-    } else {
-      result = await pool.query("SELECT * FROM tasks;")
-      // result = await pool.query("SELECT * FROM tasks WHERE project_id is null;");
-    }
+    const result = await pool.query(query, params);
 
     if (result.rows.length < 1) {
-      return res.status(204).json({ message: "No task created yet" });
+      return res.status(204).json({ message: "No tasks found" });
     }
     res.status(200).json(result.rows);
   } catch (err) {
