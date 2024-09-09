@@ -1,5 +1,6 @@
+
 import pool from "../config/config.js";
-import taskValidator from "../utils/taskInputValidator.js";
+import taskValidator from "../utils/taskValidator.js";
 import { authMiddleware } from "./auth.js";
 import crypto from 'crypto';
 import express from 'express';
@@ -38,24 +39,36 @@ router.get('/:id', authMiddleware, async (req, res, next) => {
 });
 
 // create task
+router.post('/', authMiddleware, taskValidator, async function (req, res, next) {  
+  try {  
+    const [title, description, deadline, reminder, status] = req.validatedtask;  
+    const user_id = req.user_id;  
+    const uuid = crypto.randomUUID();  
 
-router.post('/', authMiddleware, taskValidator, async function (req, res, next) {
-  try {
-    const [title, description, deadline, reminder, status] = req.validatedtask;
-    const user_id = req.user_id;
-    const tast_id = req.tast_id;
-    const project_id = req.project_id
-    const uuid = crypto.randomUUID();
+    const addtaskQuery = `INSERT INTO tasks (tast_id, title, description, priority, deadline, reminder, status, user_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`;  
+    
+    const insertedtask = await pool.query(addtaskQuery, [uuid, title, description, status, deadline, reminder, user_id]);  
+    
+    // Create a notification for the task  
+    const notificationMessage = `Task "${title}" has been created and is due on ${deadline}.`;  
+    await createNotification(task_id, uuid, notificationMessage);  
 
-    const addtaskQuery = `INSERT INTO tasks (tast_id, title, description, priority, deadline, reminder, status, user_id, project_id, created_at, updated_at) VALUE ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`;
-    const insertedtask = await pool.query(addtaskQuery, [uuid, name, description, user_id, deadline])
+    // Notify user for reminders  
+    const notificationTime = new Date(deadline).getTime() - Date.now() - 60 * 60 * 1000; // 1 hour before the deadline  
 
-    return res.status(201).json(insertedtask?.rows[0]);
-  } catch (error) {
-    console.error('Error in try-catch block:', error?.message || error);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-})
+    if (notificationTime > 0) {  
+      setTimeout(async () => {  
+        const reminderMessage = `Task "${title}" is about to expire!`;  
+        await createNotification(task_id, uuid, reminderMessage);  
+      }, notificationTime);  
+    }  
+
+    return res.status(201).json(insertedtask.rows[0]);  
+  } catch (error) {  
+    console.error('Error in try-catch block:', error?.message || error);  
+    return res.status(500).json({ error: 'Internal server error' });  
+  }  
+});
 
 // taskmt=# CREATE TABLE tasks (
 //   tast_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
