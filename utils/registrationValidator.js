@@ -9,7 +9,7 @@ const registerSchema = Joi.object({
 export default function registrationValidator(req, res, next) {
   const { error } = registerSchema.validate(req.body);
 
-  if (error) return res.status(400).send(error.details[0].message);
+  if (error) return res.status(400).json({ message: error.details[0].message });
 
-  next();
+  next(error);
 };

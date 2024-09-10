@@ -1,36 +1,40 @@
 import pool from "../config/config.js";
-import taskValidator from "../utils/taskValidator.js";
+import { createTaskValidator, updateTaskValidator } from "../utils/taskValidator.js";
 import { authMiddleware } from "./auth.js";
 import crypto from 'crypto';
 import express from 'express';
 
 const router = express.Router();
 
-// Get tasks by project_id
+// Get tasks  with or without project id
+
+// Get tasks  with or without project id
+
 router.get('/', authMiddleware, async (req, res, next) => {
-  const { project_id } = req.query;
+  const { project_id, priority, status,  } = req.query;
 
   try {
-    const result = await pool.query("SELECT * FROM tasks WHERE project_id = $1;", [project_id]);
+    let query = "SELECT * FROM tasks WHERE 1=1";
+    const params = [];
+    if (project_id) {
+      query += " AND project_id = $1";
+      params.push(project_id);
+    }
+    if (priority) {
+      query += params.length ? " AND priority = $" + (params.length + 1) : " AND priority = $1";
+      params.push(priority);
+    }
+    if (status) {
+      query += params.length ? " AND status = $" + (params.length + 1) : " AND status = $1";
+      params.push(status);
+    }
+
+    const result = await pool.query(query, params);
+
     if (result.rows.length < 1) {
-      return res.status(200).json([]);
+      return res.status(204).json({ message: "No tasks found" });
     }
     res.status(200).json(result.rows);
-  } catch (err) {
-    console.error('Error fetching tasks:', err.message || err);
-    next(err);
-  }
-});
-
-// Get tasks 
-
-router.get('/', authMiddleware, async (req, res, next) => {
-  try {
-    const result = await pool.query("SELECT * FROM tasks;");
-    if (result.rows.length < 1) {
-      return res.status(404).json({ message: "No task created yet" });
-    }
-    res.json(result.rows);
   } catch (err) {
     console.error('Error fetching tasks:', err.message || err);
     next(err);
@@ -53,32 +57,33 @@ router.get('/:id', authMiddleware, async (req, res, next) => {
   }
 });
 
-// Create a task with optional project_id and dependency_task_id
+// Create a task with 
 
-router.post('/', authMiddleware, taskValidator, async (req, res, next) => {
+router.post('/', authMiddleware, createTaskValidator, async (req, res, next) => {
   try {
-    const { name, description, priority, deadline,  status, project_id, time_estimate, is_recurring, recurrence_pattern, } = req.body;
-    const user_id = req.user_id; // Get user ID from request context
+    const { name, description, priority, start_time, deadline, status, project_id, time_estimate, is_recurring, recurrence_pattern } = req.validatedTask;
+    const user_id = req.user.user_id; // Get user ID from request context
     const uuid = crypto.randomUUID();
 
     const addTaskQuery = `
-    INSERT INTO tasks (task_id, name, description, priority, deadline, status, user_id, project_id, created_at, updated_at, time_estimate, is_recurring, recurrence_pattern)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $9, $10, $11)
-    RETURNING *;
-  `;
+      INSERT INTO tasks (id, name, description, priority, start_time, deadline, status, user_id, project_id, time_estimate, is_recurring, recurrence_pattern)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      RETURNING *;
+    `;
 
     const insertedTask = await pool.query(addTaskQuery, [
       uuid,
       name,
       description,
       priority,
+      start_time,
       deadline,
       status,
       user_id,
       project_id || null, // Use null if project_id is not provided
       time_estimate || null, // Use null if time_estimate is not provided
       is_recurring || false, // Default to false if is_recurring is not provided
-      recurrence_pattern || null, // Use null if recurrence_pattern is not provide
+      recurrence_pattern || null // Use null if recurrence_pattern is not provided
     ]);
 
     res.status(201).json(insertedTask.rows[0]);
@@ -90,34 +95,40 @@ router.post('/', authMiddleware, taskValidator, async (req, res, next) => {
 
 // Update a task
 
-router.put('/:id', authMiddleware, taskValidator, async (req, res, next) => {
-  const taskId = req.params.task_id;
-  const { name, description, deadline, reminder, priority, status, project_id, time_estimate, is_recurring, recurrence_pattern } = req.body;
+router.put('/:id', authMiddleware, updateTaskValidator, async (req, res, next) => {
+  const taskId = req.params.id;
+  const fieldsToUpdate = {};
+  const validFields = [
+    'name', 'description', 'deadline', 'reminder', 'priority', 'status', 'project_id',
+    'time_estimate', 'is_recurring', 'recurrence_pattern'
+  ];
+
+  validFields.forEach(field => {
+    if (req.body[field] !== undefined) {
+      fieldsToUpdate[field] = req.body[field];
+    }
+  });
+
+  if (Object.keys(fieldsToUpdate).length === 0) {
+    return res.status(400).json({ message: "No valid fields provided for update" });
+  }
 
   try {
+    const setClause = Object.keys(fieldsToUpdate)
+      .map((field, index) => `${field} = $${index + 1}`)
+      .join(', ');
+
+    const values = Object.values(fieldsToUpdate);
+    values.push(taskId);  // Add taskId as the last parameter for the WHERE clause
+
     const updateTaskQuery = `
       UPDATE tasks
-      SET name = $1, description = $2, deadline = $3, reminder = $4, priority = $5, status = $6, project_id = $7, updated_at = CURRENT_TIMESTAMP, time_estimate = $8, is_recurring = $9, recurrence_pattern = $10
-      WHERE task_id = $11
+      SET ${setClause}, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $${values.length}
       RETURNING *;
     `;
-    const updatedTask = await pool.query(updateTaskQuery, [
-      name,
-      description,
-      deadline,
-      reminder,
-      priority,
-      status,
-      project_id || null, // Use null if project_id is not provided
-      time_estimate || null, // Use null if time_estimate is not provided
-      is_recurring || false, // Default to false if is_recurring is not provided
-      recurrence_pattern || null, // Use null if recurrence_pattern is not provided
-      taskId
-    ]);
 
-    if (updatedTask.rows.length === 0) {
-      return res.status(404).json({ message: "Task not found" });
-    }
+    const updatedTask = await pool.query(updateTaskQuery, values);
 
     if (updatedTask.rows.length === 0) {
       return res.status(404).json({ message: "Task not found" });
@@ -130,6 +141,7 @@ router.put('/:id', authMiddleware, taskValidator, async (req, res, next) => {
   }
 });
 
+// delete task 
 
 // delete task 
 
@@ -140,7 +152,7 @@ router.delete("/:id", authMiddleware, async (req, res, next) => {
     // Query to delete the task
     const deleteTaskQuery = `
       DELETE FROM tasks
-      WHERE task_id = $1
+      WHERE id = $1
       RETURNING *;
     `;
 

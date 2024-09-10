@@ -1,5 +1,6 @@
 import pg from "pg";
 import dotenv from "dotenv";
+import { google } from "googleapis";
 
 dotenv.config();
 
@@ -27,5 +28,11 @@ pool.connect()
     REFRESH_JWT_SECRET: process.env.REFRESH_JWT_SECRET_KEY,
     REFRESH_JWT_EXPIRATION_TIME: process.env.REFRESH_JWT_EXPIRATION_TIME
   }
+
+  export const oauth2Client = new google.auth.OAuth2(
+    process.env.CLIENT_ID,
+    process.env.CLIENT_SECRET,
+    process.env.REDIRECT_URL
+  )
 
 export default pool;
