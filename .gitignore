@@ -1,4 +1,6 @@
 node_modules/
 .env
-credentials.json/
+
 package-lock.json
+
+credentials.json
