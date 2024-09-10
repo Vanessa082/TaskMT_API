@@ -1,4 +1,4 @@
-import pool, { appConfig } from '../config/config.js';
+import pool, { appConfig, oauth2Client } from '../config/config.js';
 import express from 'express';
 import registrationValidator from '../utils/registrationValidator.js';
 import bcrypt from 'bcrypt';
@@ -122,5 +122,20 @@ export async function authMiddleware(req, res, next) {
     return res.status(401).json({ error });
   }
 }
+
+
+const Scopes = [
+  'https://www.googleapis.com/auth/calendar',
+  'https://www.googleapis.com/auth/calendar.readonly'
+]
+
+router.get('/google', (req, res) => {
+  const url = oauth2Client.generateAuthUrl({
+    access_type: 'offline',
+    scope: Scopes
+  })
+
+  res.redirect(url)
+})
 
 export default router;
