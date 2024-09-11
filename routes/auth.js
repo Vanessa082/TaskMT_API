@@ -155,7 +155,7 @@ router.get('google/callback', async (req, res) => {
     req.session.tokens = tokens
     res.redirect('/dasboard')
   } catch (error) {
-    console.error('Error exchanging code for tokens', error);
+    console.error('Error exchanging code fo=r tokens', error);
     res.status(500).send('Authentication failed')
   }
 })
