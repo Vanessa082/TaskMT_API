@@ -3,8 +3,9 @@ import express from 'express';
 import registrationValidator from '../utils/registrationValidator.js';
 import bcrypt from 'bcrypt';
 import loginValidator from '../utils/loginValidator.js';
-import { signToken, verifyToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
+import { signToken, verifyToken } from '../utils/jwt.js';
 import crypto from 'crypto'
+import { google } from 'googleapis/build/src/index.js';
 
 const router = express.Router();
 
@@ -129,13 +130,34 @@ const Scopes = [
   'https://www.googleapis.com/auth/calendar.readonly'
 ]
 
+const calendar = google.calendar({
+  version: 'v3',
+  auth: oauth2Client
+})
+
 router.get('/google', (req, res) => {
   const url = oauth2Client.generateAuthUrl({
     access_type: 'offline',
-    scope: Scopes
+    scope: Scopes,
+    prompt: 'consent'
   })
 
   res.redirect(url)
+})
+
+
+router.get('google/callback', async (req, res) => {
+  const code = req.query.code
+  try {
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    req.session.tokens = tokens
+    res.redirect('/dasboard')
+  } catch (error) {
+    console.error('Error exchanging code fo=r tokens', error);
+    res.status(500).send('Authentication failed')
+  }
 })
 
 export default router;
