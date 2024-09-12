@@ -1,17 +1,17 @@
-import pool from "../config/config.js";
+import { google } from "googleapis/build/src/index.js";
+import pool, { oauth2Client } from "../config/config.js";
 import { createTaskValidator, updateTaskValidator } from "../utils/taskValidator.js";
 import { authMiddleware } from "./auth.js";
 import crypto from 'crypto';
 import express from 'express';
+import { start } from "repl";
 
 const router = express.Router();
 
 // Get tasks  with or without project id
 
-// Get tasks  with or without project id
-
 router.get('/', authMiddleware, async (req, res, next) => {
-  const { project_id, priority, status,  } = req.query;
+  const { project_id, priority, status, } = req.query;
 
   try {
     let query = "SELECT * FROM tasks WHERE 1=1";
@@ -85,6 +85,25 @@ router.post('/', authMiddleware, createTaskValidator, async (req, res, next) => 
       is_recurring || false, // Default to false if is_recurring is not provided
       recurrence_pattern || null // Use null if recurrence_pattern is not provided
     ]);
+
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
+    const event = {
+      summary: name,
+      description,
+      start: {
+        dateTime: start_time,
+        timeZone: 'Africa/Douala',
+      },
+      end: {
+        dateTime: deadline,
+        timeZone: 'Africa/Douala',
+      }
+    }
+
+    await calendar.events.insert({
+      calendarId: 'primary',
+      requestBody: event,
+    })
 
     res.status(201).json(insertedTask.rows[0]);
   } catch (error) {
