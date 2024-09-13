@@ -125,7 +125,7 @@ export async function authMiddleware(req, res, next) {
 }
 
 
-router.get('/google', (req, res) => {
+router.post('/google', (req, res) => {
   res.redirect(url);
 });
 
@@ -135,7 +135,7 @@ router.get('/google/callback', async (req, res) => {
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
     req.session.tokens = tokens;
-    res.redirect('/dashboard')
+    res.redirect(`${appConfig.FRONT_END_URL}/dashboard`)
   } catch (error) {
     
     console.error('Error exchanging code for tokens', error);
