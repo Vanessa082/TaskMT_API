@@ -6,7 +6,9 @@ import cors from "cors"
 import authRouter from './routes/auth.js';
 import usersRouter from './routes/users.js';
 import projectRouter from './routes/projects.js';
-import taskRouter from './routes/tasks.js'
+import taskRouter from './routes/tasks.js';
+import calendarRouter from './routes/calendar.js';
+import session from 'express-session';
 
 dotenv.config();
 const app = express();
@@ -20,10 +22,18 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+app.use(session({
+  secret: process.env.GOOGLE_SECRET_KEY,
+  resave: false,
+  saveUninitialized: true,
+  cookie: {secure : false}
+}));
+
 app.use('/auth', authRouter);
 app.use('/users', usersRouter);
 app.use('/projects', projectRouter);
 app.use('/tasks', taskRouter)
+app.use('/calendar', calendarRouter);
 
 app.get("/health", (_, res) => {
   const date = new Date();
@@ -33,12 +43,6 @@ app.get("/health", (_, res) => {
   });
 });
 
-// catch 404 and forward to error handler
-// app.use(function (req, res, next) {
-//   next(createError(404));
-// });
-
-// error handler
 app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;

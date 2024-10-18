@@ -7,7 +7,7 @@ const taskSchema = Joi.object({
   status: Joi.string().valid('Not Started', 'Pending', 'Completed', 'On hold').required().default('Not Started'),
   start_time: Joi.date().optional().allow(null),
   deadline: Joi.date().optional().allow(null),
-  time_estimate: Joi.string().regex(/^\d+\s+(minutes|hour)$/).optional().allow(null, ''), //for example an hour
+  time_estimate: Joi.string().regex(/^\d+\s+(minute|hour)$/).optional().allow(null, ''), //for example an hour
   is_recurring: Joi.boolean().default(false).optional(),
   project_id: Joi.string().guid().optional().allow(null, ''),
   recurrence_pattern: Joi.string().allow(null, '').when('is_recurring', {

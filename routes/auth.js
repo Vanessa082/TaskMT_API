@@ -3,8 +3,9 @@ import express from 'express';
 import registrationValidator from '../utils/registrationValidator.js';
 import bcrypt from 'bcrypt';
 import loginValidator from '../utils/loginValidator.js';
-import { signToken, verifyToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
+import { signToken, verifyToken } from '../utils/jwt.js';
 import crypto from 'crypto'
+import { url } from '../utils/redirectUrl.js';
 
 const router = express.Router();
 
@@ -124,18 +125,22 @@ export async function authMiddleware(req, res, next) {
 }
 
 
-const Scopes = [
-  'https://www.googleapis.com/auth/calendar',
-  'https://www.googleapis.com/auth/calendar.readonly'
-]
+router.post('/google', (req, res) => {
+  res.redirect(url);
+});
 
-router.get('/google', (req, res) => {
-  const url = oauth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: Scopes
-  })
-
-  res.redirect(url)
+router.get('/google/callback', async (req, res) => {
+  const code = req.query.code;
+  try {
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+    req.session.tokens = tokens;
+    res.redirect(`${appConfig.FRONT_END_URL}/dashboard`)
+  } catch (error) {
+    
+    console.error('Error exchanging code for tokens', error);
+    res.status(500).send('Authentication failed');
+  }
 })
 
 export default router;

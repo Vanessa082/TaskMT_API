@@ -22,17 +22,18 @@ pool.connect()
     process.exit(-1); // Exit process with failure
   });
 
-  export const appConfig = {
-    JWT_SECRET: process.env.SECRET_KEY,
-    JWT_EXPIRATION_TIME: process.env.JWT_EXPIRATION_TIME,
-    REFRESH_JWT_SECRET: process.env.REFRESH_JWT_SECRET_KEY,
-    REFRESH_JWT_EXPIRATION_TIME: process.env.REFRESH_JWT_EXPIRATION_TIME
-  }
+export const appConfig = {
+  JWT_SECRET: process.env.SECRET_KEY,
+  JWT_EXPIRATION_TIME: process.env.JWT_EXPIRATION_TIME,
+  REFRESH_JWT_SECRET: process.env.REFRESH_JWT_SECRET_KEY,
+  REFRESH_JWT_EXPIRATION_TIME: process.env.REFRESH_JWT_EXPIRATION_TIME,
+  FRONT_END_URL: process.env.FRONT_END_URL,
+}
 
-  export const oauth2Client = new google.auth.OAuth2(
-    process.env.CLIENT_ID,
-    process.env.CLIENT_SECRET,
-    process.env.REDIRECT_URL
-  )
+export const oauth2Client = new google.auth.OAuth2(
+  process.env.CLIENT_ID,
+  process.env.CLIENT_SECRET,
+  process.env.REDIRECT_URL
+)
 
 export default pool;
