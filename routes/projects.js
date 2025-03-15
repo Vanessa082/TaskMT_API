@@ -1,8 +1,8 @@
 import express from 'express';
-import pool from "../config/config.js";
 import projectValidator from "../utils/projectInputValidator.js";
 import { authMiddleware } from "./auth.js";
 import crypto from 'crypto';
+import pool from '../config/dbConfig.js';
 
 const router = express.Router();
 

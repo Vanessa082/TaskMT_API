@@ -1,4 +1,4 @@
-import { oauth2Client } from '../config/config.js';
+import { oauth2Client } from '../config/o2authConfig.js';
 import { url } from './redirectUrl.js';
 
 export default function refreshAccessToken(req, res, next) {

@@ -1,10 +1,10 @@
 import { google } from "googleapis/build/src/index.js";
-import pool, { oauth2Client } from "../config/config.js";
+import pool from "../config/dbConfig.js";
 import { createTaskValidator, updateTaskValidator } from "../utils/taskValidator.js";
 import { authMiddleware } from "./auth.js";
 import crypto from 'crypto';
 import express from 'express';
-import { start } from "repl";
+import { oauth2Client } from "../config/o2authConfig.js";
 
 const router = express.Router();
 

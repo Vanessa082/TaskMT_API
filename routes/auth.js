@@ -1,4 +1,5 @@
-import pool, { appConfig, oauth2Client } from '../config/config.js';
+import pool from '../config/dbConfig.js';
+import { oauth2Client } from '../config/o2authConfig.js';
 import express from 'express';
 import registrationValidator from '../utils/registrationValidator.js';
 import bcrypt from 'bcrypt';
@@ -6,6 +7,7 @@ import loginValidator from '../utils/loginValidator.js';
 import { signToken, verifyToken } from '../utils/jwt.js';
 import crypto from 'crypto'
 import { url } from '../utils/redirectUrl.js';
+import { appConfig } from '../config/appConfig.js';
 
 const router = express.Router();
 
